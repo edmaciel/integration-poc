@@ -22,13 +22,10 @@ public class UserGatewayRestTemplateImpl implements UserGatewayRestTemplate {
     public List<User> getUsers(String id) {
         RestTemplate restTemplate = new RestTemplate();
 
-        List<User> users = new ArrayList<>();
         ResponseEntity<List<User>> response = restTemplate.exchange(endpoint + id,
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<User>>() {
                 });
 
-        users = response.getBody();
-
-        return users;
+        return response.getBody();
     }
 }
