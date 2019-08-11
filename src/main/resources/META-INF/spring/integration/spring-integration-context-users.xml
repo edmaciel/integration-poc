@@ -1,17 +1,51 @@
-<?xml version="1.0" encoding="UTF-8"?>
+ <?xml version="1.0" encoding="UTF-8"?>
 
-<beans:beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:int="http://www.springframework.org/schema/integration"
-             xmlns:beans="http://www.springframework.org/schema/beans"
-             xmlns="http://www.springframework.org/schema/beans"
-             xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+ <beans:beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:int="http://www.springframework.org/schema/integration"
+              xmlns:beans="http://www.springframework.org/schema/beans"
+              xmlns="http://www.springframework.org/schema/beans"
+              xmlns:int-http="http://www.springframework.org/schema/c"
+              xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
 		            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     
-    <int:channel id="usage_input"/>
-    <int:channel id="usage_reponse"/>
+    <int:channel id="user_input"/>
+    <int:channel id="user_output"/>
+
+    <int:chain input-channel="user_input" output-channel="user_output">
+        <int:splitter id="splitter"/>
+        <int:enricher id="enricher" request-channel="outbound_gateway" />
+        <int:resequencer id="resequencer"/>
+
+        <int:aggregator id="aggregator"
+                        message-store="store"
+                        release-strategy="releaser"
+        />
+
+    </int:chain>
+
+    <bean id="store" class="org.springframework.integration.store.SimpleMessageStore">
+        <property name="messageGroupFactory">
+            <bean class="org.springframework.integration.store.SimpleMessageGroupFactory">
+                <constructor-arg value="BLOCKING_QUEUE"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="releaser" class="org.springframework.integration.aggregator.SimpleSequenceSizeReleaseStrategy" />
+
+    <int:channel id="outbound_gateway" />
+    <int-http:outbound-gateway id="osb_endpoint_usage"
+                               request-channel="outboundGateway"
+                               url="${user.endpoint}{id}"
+                               http-method="GET"
+                               expected-response-type="com.model.User[]">
+
+        <int-http:uri-variable name="id" expression="payload"/>
+    </int-http:outbound-gateway>
+
 
     <int:gateway id="userGateway"
              service-interface="com.integration.user.gateway.UserGateway"
-             default-request-channel="usage_input"
-             default-reply-channel="usage_reponse"/>
+             default-request-channel="user_input"
+             default-reply-channel="user_output"/>
 </beans:beans>
