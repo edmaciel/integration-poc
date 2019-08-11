@@ -7,4 +7,6 @@ import java.util.List;
 public interface UserGatewayRestTemplate {
 
     List<User> getUsers(String id);
+
+    User getUser(String id);
 }
